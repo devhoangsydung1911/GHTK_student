@@ -1,0 +1,70 @@
+version: "3"
+
+networks:
+  dunhs3:
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: "nginx_${APP_NAME}"
+    ports:
+      # - "80:80"
+      # - "443:443"
+      - "8080:80"
+      - "8000:8000"
+    volumes:
+      - ./src:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+      - mysql
+    networks:
+      - dunhs3
+
+  mysql:
+    image: mysql:8.0.29
+    container_name: "mysql_${APP_NAME}"
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: student
+      MYSQL_USER: dunghs3
+      MYSQL_PASSWORD: student
+      MYSQL_ROOT_PASSWORD: student
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - dunhs3
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: "php_${APP_NAME}"
+    volumes:
+      - ./src:/var/www/html
+    ports:
+      - "9000:9000"
+    networks:
+      - dunhs3
+
+  composer:
+    image: composer:latest
+    container_name: "composer_${APP_NAME}"
+    volumes:
+      - ./src:/var/www/html
+    working_dir: /var/www/html
+    depends_on:
+      - php
+    networks:
+      - dunhs3
+
+  npm:
+    image: node:14.17
+    container_name: "npm_${APP_NAME}"
+    volumes:
+      - ./src:/var/www/html
+    working_dir: /var/www/html
+    entrypoint: ["npm"]
